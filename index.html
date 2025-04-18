@@ -13,11 +13,6 @@
         font-weight: bold;
         border: 1px solid #ccc;
         margin-bottom: 16px;
-        font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
-      }
-      .download-link {
-        display: inline-block;
-        margin: 4px;
       }
       .options {
         margin: 12px 0;
@@ -33,33 +28,43 @@
     <p>텍스트를 입력하고 옵션을 조정한 뒤 버튼을 클릭하세요.</p>
 
     <div class="options">
-      <label for="textInput">텍스트 입력:</label>
+      <label>텍스트 입력:</label>
       <input id="textInput" value="📦안녕😀" />
 
-      <label for="bgColor">배경 색상:</label>
+      <label>배경 색상:</label>
       <input type="color" id="bgColor" value="#ffffff" />
 
-      <label for="textColor">글자 색상:</label>
+      <label>글자 색상:</label>
       <input type="color" id="textColor" value="#000000" />
 
-      <label for="fontSize">글자 크기: <span id="fontSizeValue">48</span>px</label>
+      <label>글자 크기: <span id="fontSizeValue">48</span>px</label>
       <input type="range" id="fontSize" min="24" max="120" value="48" />
 
-      <label for="speed">프레임 간 속도 (ms): <span id="speedValue">200</span>ms</label>
+      <label>프레임 간 속도 (ms): <span id="speedValue">200</span>ms</label>
       <input type="range" id="speed" min="50" max="1000" step="50" value="200" />
 
-      <label for="width">GIF 가로 크기(px): <span id="widthValue">100</span></label>
+      <label>GIF 가로 크기(px): <span id="widthValue">100</span></label>
       <input type="range" id="width" min="50" max="400" value="100" />
 
-      <label for="height">GIF 세로 크기(px): <span id="heightValue">100</span></label>
+      <label>GIF 세로 크기(px): <span id="heightValue">100</span></label>
       <input type="range" id="height" min="50" max="400" value="100" />
 
-      <label for="scale">해상도 배율 (1x~3x):</label>
-      <select id="scale">
-        <option value="1">1x</option>
-        <option value="2">2x</option>
-        <option value="3">3x</option>
+      <label>해상도 배율 (1x~16x): <span id="scaleValue">1</span></label>
+      <input type="range" id="scale" min="1" max="16" step="1" value="1" />
+
+      <label>폰트 선택:</label>
+      <select id="fontFamily">
+        <option value='"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif'>Emoji Default</option>
+        <option value="system-ui">System UI</option>
+        <option value="Noto Sans KR">Noto Sans KR</option>
+        <option value="Arial">Arial</option>
+        <option value="'Courier New'">Courier New</option>
+        <option value="'Times New Roman'">Times New Roman</option>
+        <option value="CustomFont">[업로드한 커스텀 폰트]</option>
       </select>
+
+      <label>📁 커스텀 폰트 파일 업로드 (.ttf/.woff)</label>
+      <input type="file" id="customFontFile" accept=".ttf,.woff" />
     </div>
 
     <button onclick="captureFrames()">캡처 및 GIF 생성</button>
@@ -69,9 +74,35 @@
 
     <script>
       const updateLabel = (id, value) => (document.getElementById(id).innerText = value);
-      ["fontSize", "speed", "width", "height"].forEach((id) =>
-        document.getElementById(id).addEventListener("input", (e) => updateLabel(id + "Value", e.target.value))
-      );
+      ["fontSize", "speed", "width", "height", "scale"].forEach((id) => {
+        const input = document.getElementById(id);
+        const valueLabel = document.getElementById(id + "Value");
+
+        input.addEventListener("input", () => {
+          valueLabel.innerText = input.value;
+        });
+      });
+
+      // 커스텀 폰트 업로드 처리
+      document.getElementById("customFontFile").addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function (event) {
+          const fontData = event.target.result;
+          const style = document.createElement("style");
+          style.innerHTML = `
+            @font-face {
+              font-family: 'CustomFont';
+              src: url('${fontData}');
+            }
+          `;
+          document.head.appendChild(style);
+          alert("✅ 커스텀 폰트 적용됨. [업로드한 커스텀 폰트] 선택하세요.");
+        };
+        reader.readAsDataURL(file);
+      });
 
       async function captureFrames() {
         const text = document.getElementById("textInput").value.trim();
@@ -79,19 +110,21 @@
         const textColor = document.getElementById("textColor").value;
         const fontSize = parseInt(document.getElementById("fontSize").value, 10);
         const frameDelay = parseInt(document.getElementById("speed").value, 10);
+        const gifWidth = parseInt(document.getElementById("width").value, 10);
+        const gifHeight = parseInt(document.getElementById("height").value, 10);
         const scale = parseInt(document.getElementById("scale").value, 10);
-        const gifWidth = parseInt(document.getElementById("width").value, 10) * scale;
-        const gifHeight = parseInt(document.getElementById("height").value, 10) * scale;
+        const fontFamily = document.getElementById("fontFamily").value;
 
         const captureArea = document.getElementById("capture-area");
         const container = document.getElementById("download-container");
         const frameImages = [];
 
-        captureArea.style.width = gifWidth  + "px";
-        captureArea.style.height = gifHeight  + "px";
+        captureArea.style.width = gifWidth * scale + "px";
+        captureArea.style.height = gifHeight * scale + "px";
         captureArea.style.fontSize = fontSize * scale + "px";
         captureArea.style.backgroundColor = bgColor;
         captureArea.style.color = textColor;
+        captureArea.style.fontFamily = fontFamily;
 
         container.innerHTML = "";
 
@@ -100,44 +133,38 @@
           captureArea.innerText = chars[i];
 
           await new Promise((resolve) => setTimeout(resolve, 100));
-          const canvas = await html2canvas(captureArea, {
-            scale: 1, // 실제 캡처는 우리가 사이즈 조절해서 이미 확대됨
-          });
+          const canvas = await html2canvas(captureArea, { scale: 1 });
           const dataURL = canvas.toDataURL("image/png");
           frameImages.push(dataURL);
         }
 
-        function makeGifFromPngArray(imageArray) {
-          gifshot.createGIF(
-            {
-              images: imageArray,
-              interval: frameDelay / 1000,
-              gifWidth: gifWidth,
-              gifHeight: gifHeight,
-              numFrames: imageArray.length,
-              frameDuration: 1,
-              sampleInterval: 10,
-            },
-            function (obj) {
-              if (!obj.error) {
-                const image = obj.image;
-                const preview = document.createElement("img");
-                preview.src = image;
-                document.body.appendChild(preview);
+        gifshot.createGIF(
+          {
+            images: frameImages,
+            interval: frameDelay / 1000,
+            gifWidth,
+            gifHeight,
+            numFrames: frameImages.length,
+            frameDuration: 1,
+            sampleInterval: 10,
+          },
+          function (obj) {
+            if (!obj.error) {
+              const image = obj.image;
+              const preview = document.createElement("img");
+              preview.src = image;
+              document.body.appendChild(preview);
 
-                const downloadLink = document.createElement("a");
-                downloadLink.href = image;
-                downloadLink.download = "output.gif";
-                downloadLink.textContent = "GIF 다운로드";
-                document.body.appendChild(downloadLink);
-              } else {
-                console.error("GIF 생성 실패:", obj.errorMsg);
-              }
+              const downloadLink = document.createElement("a");
+              downloadLink.href = image;
+              downloadLink.download = "output.gif";
+              downloadLink.textContent = "GIF 다운로드";
+              document.body.appendChild(downloadLink);
+            } else {
+              console.error("GIF 생성 실패:", obj.errorMsg);
             }
-          );
-        }
-
-        makeGifFromPngArray(frameImages);
+          }
+        );
       }
     </script>
   </body>
