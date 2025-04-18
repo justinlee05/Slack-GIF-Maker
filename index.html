@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>프레임별 PNG 다운로드</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gifshot/0.3.2/gifshot.min.js"></script>
+
+    <style>
+      #capture-area {
+        width: 100px;
+        height: 100px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 48px;
+        font-weight: bold;
+        background: white;
+        color: black;
+        border: 1px solid #ccc;
+        margin-bottom: 16px;font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+      }
+      .download-link {
+        display: inline-block;
+        margin: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <h3>한 글자씩 PNG로 캡처 & 다운로드</h3>
+    <input id="textInput" value="" />
+    <button onclick="captureFrames()">캡처 및 다운로드 생성</button>
+    <div id="capture-area"></div>
+    <div id="download-container"></div>
+
+    <script>
+      async function captureFrames() {
+        const text = document.getElementById("textInput").value.trim();
+        const captureArea = document.getElementById("capture-area");
+        const container = document.getElementById("download-container");
+        const frameImages = [];
+
+        container.innerHTML = ""; // 버튼 초기화
+        const chars = Array.from(text); // 이모지도 잘 분리되는 안전한 방식
+for (let i = 0; i < chars.length; i++) {
+  const char = chars[i];
+          captureArea.innerText = char;
+
+          await new Promise((resolve) => setTimeout(resolve, 100)); // DOM 렌더링 대기
+
+          const canvas = await html2canvas(captureArea);
+          const dataURL = canvas.toDataURL("image/png");
+          frameImages.push(dataURL);
+        }
+
+        console.log("📦 저장된 이미지들:", frameImages);
+
+        function makeGifFromPngArray(imageArray) {
+          gifshot.createGIF(
+            {
+              images: imageArray,
+              interval: 0.2,
+              gifWidth: 400,
+              gifHeight: 400,
+              numFrames: imageArray.length,
+              frameDuration: 1,
+              sampleInterval: 10,
+            },
+            function (obj) {
+              if (!obj.error) {
+                const image = obj.image;
+                const preview = document.createElement("img");
+                preview.src = image;
+                document.body.appendChild(preview);
+
+                const downloadLink = document.createElement("a");
+                downloadLink.href = image;
+                downloadLink.download = "output.gif";
+                downloadLink.textContent = "GIF 다운로드";
+                document.body.appendChild(downloadLink);
+              } else {
+                console.error("GIF 생성 실패:", obj.errorMsg);
+              }
+            }
+          );
+        }
+
+        // GIF 생성
+        makeGifFromPngArray(frameImages);
+      }
+    </script>
+  </body>
+</html>
