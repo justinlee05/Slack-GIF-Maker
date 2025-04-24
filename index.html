@@ -41,7 +41,14 @@
       <input type="range" id="fontSize" min="24" max="120" value="48" />
 
       <label>프레임 간 속도 (ms): <span id="speedValue">200</span>ms</label>
-      <input type="range" id="speed" min="50" max="1000" step="50" value="200" />
+      <input
+        type="range"
+        id="speed"
+        min="50"
+        max="1000"
+        step="50"
+        value="200"
+      />
 
       <label>GIF 가로 크기(px): <span id="widthValue">100</span></label>
       <input type="range" id="width" min="50" max="400" value="100" />
@@ -54,7 +61,11 @@
 
       <label>폰트 선택:</label>
       <select id="fontFamily">
-        <option value='"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif'>Emoji Default</option>
+        <option
+          value='"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif'
+        >
+          Emoji Default
+        </option>
         <option value="system-ui">System UI</option>
         <option value="Noto Sans KR">Noto Sans KR</option>
         <option value="Arial">Arial</option>
@@ -73,68 +84,87 @@
     <div id="download-container"></div>
 
     <script>
-      const updateLabel = (id, value) => (document.getElementById(id).innerText = value);
-      ["fontSize", "speed", "width", "height", "scale"].forEach((id) => {
-        const input = document.getElementById(id);
-        const valueLabel = document.getElementById(id + "Value");
+      class GraphemeSplitter {
+        splitGraphemes(str) {
+          const seg = new Intl.Segmenter(undefined, {
+            granularity: 'grapheme',
+          });
+          return Array.from(seg.segment(str), (s) => s.segment);
+        }
+      }
+    </script>
 
-        input.addEventListener("input", () => {
+    <script>
+      const updateLabel = (id, value) =>
+        (document.getElementById(id).innerText = value);
+      ['fontSize', 'speed', 'width', 'height', 'scale'].forEach((id) => {
+        const input = document.getElementById(id);
+        const valueLabel = document.getElementById(id + 'Value');
+
+        input.addEventListener('input', () => {
           valueLabel.innerText = input.value;
         });
       });
 
       // 커스텀 폰트 업로드 처리
-      document.getElementById("customFontFile").addEventListener("change", (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+      document
+        .getElementById('customFontFile')
+        .addEventListener('change', (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
 
-        const reader = new FileReader();
-        reader.onload = function (event) {
-          const fontData = event.target.result;
-          const style = document.createElement("style");
-          style.innerHTML = `
+          const reader = new FileReader();
+          reader.onload = function (event) {
+            const fontData = event.target.result;
+            const style = document.createElement('style');
+            style.innerHTML = `
             @font-face {
               font-family: 'CustomFont';
               src: url('${fontData}');
             }
           `;
-          document.head.appendChild(style);
-          alert("✅ 커스텀 폰트 적용됨. [업로드한 커스텀 폰트] 선택하세요.");
-        };
-        reader.readAsDataURL(file);
-      });
+            document.head.appendChild(style);
+            alert('✅ 커스텀 폰트 적용됨. [업로드한 커스텀 폰트] 선택하세요.');
+          };
+          reader.readAsDataURL(file);
+        });
 
       async function captureFrames() {
-        const text = document.getElementById("textInput").value.trim();
-        const bgColor = document.getElementById("bgColor").value;
-        const textColor = document.getElementById("textColor").value;
-        const fontSize = parseInt(document.getElementById("fontSize").value, 10);
-        const frameDelay = parseInt(document.getElementById("speed").value, 10);
-        const gifWidth = parseInt(document.getElementById("width").value, 10);
-        const gifHeight = parseInt(document.getElementById("height").value, 10);
-        const scale = parseInt(document.getElementById("scale").value, 10);
-        const fontFamily = document.getElementById("fontFamily").value;
+        const text = document.getElementById('textInput').value.trim();
+        const bgColor = document.getElementById('bgColor').value;
+        const textColor = document.getElementById('textColor').value;
+        const fontSize = parseInt(
+          document.getElementById('fontSize').value,
+          10
+        );
+        const frameDelay = parseInt(document.getElementById('speed').value, 10);
+        const gifWidth = parseInt(document.getElementById('width').value, 10);
+        const gifHeight = parseInt(document.getElementById('height').value, 10);
+        const scale = parseInt(document.getElementById('scale').value, 10);
+        const fontFamily = document.getElementById('fontFamily').value;
 
-        const captureArea = document.getElementById("capture-area");
-        const container = document.getElementById("download-container");
+        const captureArea = document.getElementById('capture-area');
+        const container = document.getElementById('download-container');
         const frameImages = [];
 
-        captureArea.style.width = gifWidth * scale + "px";
-        captureArea.style.height = gifHeight * scale + "px";
-        captureArea.style.fontSize = fontSize * scale + "px";
+        captureArea.style.width = gifWidth * scale + 'px';
+        captureArea.style.height = gifHeight * scale + 'px';
+        captureArea.style.fontSize = fontSize * scale + 'px';
         captureArea.style.backgroundColor = bgColor;
         captureArea.style.color = textColor;
         captureArea.style.fontFamily = fontFamily;
 
-        container.innerHTML = "";
+        container.innerHTML = '';
 
-        const chars = Array.from(text);
+        const splitter = new GraphemeSplitter();
+        const chars = splitter.splitGraphemes(text);
+
         for (let i = 0; i < chars.length; i++) {
           captureArea.innerText = chars[i];
 
           await new Promise((resolve) => setTimeout(resolve, 100));
           const canvas = await html2canvas(captureArea, { scale: 1 });
-          const dataURL = canvas.toDataURL("image/png");
+          const dataURL = canvas.toDataURL('image/png');
           frameImages.push(dataURL);
         }
 
@@ -151,17 +181,17 @@
           function (obj) {
             if (!obj.error) {
               const image = obj.image;
-              const preview = document.createElement("img");
+              const preview = document.createElement('img');
               preview.src = image;
               document.body.appendChild(preview);
 
-              const downloadLink = document.createElement("a");
+              const downloadLink = document.createElement('a');
               downloadLink.href = image;
-              downloadLink.download = "output.gif";
-              downloadLink.textContent = "GIF 다운로드";
+              downloadLink.download = 'output.gif';
+              downloadLink.textContent = 'GIF 다운로드';
               document.body.appendChild(downloadLink);
             } else {
-              console.error("GIF 생성 실패:", obj.errorMsg);
+              console.error('GIF 생성 실패:', obj.errorMsg);
             }
           }
         );
