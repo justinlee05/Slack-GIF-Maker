@@ -37,8 +37,8 @@
       <label>글자 색상:</label>
       <input type="color" id="textColor" value="#000000" />
 
-      <label>글자 크기: <span id="fontSizeValue">48</span>px</label>
-      <input type="range" id="fontSize" min="24" max="120" value="48" />
+      <label>글자 크기: <span id="fontSizeValue">70</span>px</label>
+      <input type="range" id="fontSize" min="24" max="120" value="70" />
 
       <label>프레임 간 속도 (ms): <span id="speedValue">200</span>ms</label>
       <input
@@ -56,8 +56,8 @@
       <label>GIF 세로 크기(px): <span id="heightValue">100</span></label>
       <input type="range" id="height" min="50" max="400" value="100" />
 
-      <label>해상도 배율 (1x~16x): <span id="scaleValue">1</span></label>
-      <input type="range" id="scale" min="1" max="16" step="1" value="1" />
+      <label>해상도 배율 (1x~16x): <span id="scaleValue">16</span></label>
+      <input type="range" id="scale" min="1" max="16" step="1" value="16" />
 
       <label>폰트 선택:</label>
       <select id="fontFamily">
@@ -78,7 +78,7 @@
       <input type="file" id="customFontFile" accept=".ttf,.woff" />
     </div>
 
-    <button onclick="captureFrames()">캡처 및 GIF 생성</button>
+    <button onclick="captureFrames()" id="submit">캡처 및 GIF 생성</button>
     <br /><br />
     <div id="capture-area"></div>
     <div id="download-container"></div>
@@ -180,16 +180,28 @@
           },
           function (obj) {
             if (!obj.error) {
+              // 기존 결과물 제거
+              const existingPreview = document.getElementById("previewWrapper");
+              if (existingPreview) {
+                existingPreview.remove();
+              }
+
+              const wrapper = document.createElement("div");
+              wrapper.id = "previewWrapper";
+
               const image = obj.image;
               const preview = document.createElement('img');
               preview.src = image;
-              document.body.appendChild(preview);
+              wrapper.appendChild(preview);
 
-              const downloadLink = document.createElement('a');
+              const downloadLink = document.createElement("a");
+              downloadLink.id = "downloadLink";
               downloadLink.href = image;
-              downloadLink.download = 'output.gif';
-              downloadLink.textContent = 'GIF 다운로드';
-              document.body.appendChild(downloadLink);
+              downloadLink.download = "output.gif";
+              downloadLink.textContent = "GIF 다운로드";
+              wrapper.appendChild(downloadLink);
+
+              document.body.appendChild(wrapper);
             } else {
               console.error('GIF 생성 실패:', obj.errorMsg);
             }
