@@ -1,0 +1,39 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 레포 체크아웃
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2. Node.js 세팅 (예: React, Next.js 등)
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      # 3. 의존성 설치
+      - name: Install dependencies
+        run: npm ci
+
+      # 4. 빌드
+      - name: Build project
+        run: npm run build
+
+      # 5. 빌드 결과물을 deploy/github 브랜치에 푸시
+      - name: Deploy to deploy/github branch
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist # 빌드 결과물 폴더 (예: React는 build, Vite는 dist)
+          publish_branch: deploy/github
+          user_name: github-actions
+          user_email: github-actions@github.com
