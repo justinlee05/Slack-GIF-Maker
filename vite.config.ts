@@ -11,4 +11,5 @@ export default defineConfig({
       plugins: [tailwindcss, autoprefixer],
     },
   },
+  base: '/Slack-GIF-Maker/',
 });
